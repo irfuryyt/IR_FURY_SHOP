@@ -1,0 +1,6 @@
+{
+  "name": "فروشگاه گیمینگ FURY_SHOP",
+  "description": "فروشگاه آنلاین خرید سی پی، یوسی، جم بازی‌ها، اکانت‌های پریمیوم و گیفت کارت FURY_SHOP با تحویل فوری و پنل مدیریت کامل",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
