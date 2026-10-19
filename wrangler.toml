@@ -1,0 +1,17 @@
+name = "furyshop-worker"
+main = "worker/index.ts"
+compatibility_date = "2024-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[site]
+bucket = "./dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ir-fury-shop-db"
+database_id = "e3f06738-f002-4889-89a9-7736d45e8463"
+migrations_dir = "./migrations"
+
+[vars]
+ENVIRONMENT = "production"
+STORE_NAME = "FURY_SHOP"

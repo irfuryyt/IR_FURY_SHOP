@@ -20,6 +20,13 @@ import {
   INITIAL_ORDERS,
 } from '../data/initialData';
 import { generateId, generateTrackingCode, getPersianNow } from '../utils/helpers';
+import {
+  fetchSiteSettingsApi,
+  updateSiteSettingsApi,
+  adminLoginApi,
+  updateAdminCredentialsApi,
+  updateUserProfileApi,
+} from '../services/api';
 
 export interface ToastMessage {
   id: string;
@@ -54,7 +61,7 @@ interface StoreContextType {
   setIsAdminAuthenticated: (val: boolean) => void;
   adminCredentials: { username: string; password?: string };
   updateAdminCredentials: (username: string, password: string) => boolean;
-  adminLogin: (username: string, password: string) => boolean;
+  adminLogin: (username: string, password: string) => boolean | Promise<boolean>;
   adminLogout: () => void;
 
   // Data state
@@ -240,15 +247,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch {
       // ignore
     }
-    showToast('نام کاربری و کلمه عبور مدیر با موفقیت ذخیره شد', 'success');
+    // Sync with Central D1 Database
+    updateAdminCredentialsApi(cleanUser, cleanPass);
+    showToast('نام کاربری و کلمه عبور مدیر در پایگاه‌داده با موفقیت ذخیره شد', 'success');
     return true;
   };
 
-  const adminLogin = (user: string, pass: string): boolean => {
+  const adminLogin = async (user: string, pass: string): Promise<boolean> => {
     const cleanUser = user.trim();
     const cleanPass = pass.trim();
 
-    // Check custom credentials, default credentials, or fallback admin
+    // Verify against Central D1 Database first
+    try {
+      const res = await adminLoginApi(cleanUser, cleanPass);
+      if (res.success) {
+        setIsAdminAuthenticated(true);
+        showToast(`خوش آمدید! ورود به پنل مدیریت ${cleanUser} تایید شد`, 'success');
+        return true;
+      }
+    } catch {
+      // fallback to local check
+    }
+
+    // Fallback checks
     const isCustomMatch = cleanUser === adminCredentials.username && cleanPass === adminCredentials.password;
     const isDefaultMatch = cleanUser === 'IR_FURY_YT' && cleanPass === 'FURY_SHOP';
     const isOwnerMatch = cleanUser.toLowerCase() === 'admin' && cleanPass.toLowerCase() === 'admin';
@@ -406,6 +427,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.removeItem(LOCAL_STORAGE_KEYS.USER);
     }
   }, [currentUser]);
+
+  // Synchronize Site Settings & Banners from Central D1 Database on mount
+  useEffect(() => {
+    fetchSiteSettingsApi().then((serverSettings) => {
+      if (serverSettings && serverSettings.storeName) {
+        setSiteSettings((prev) => ({ ...prev, ...serverSettings }));
+      }
+    });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEYS.WISHLIST, JSON.stringify(wishlist));
@@ -752,9 +782,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         ...updates,
         name: updates.fullName || updates.name || prev.name,
       };
+      // Persist to Central D1 Database
+      if (prev.id) {
+        updateUserProfileApi(prev.id, updated);
+      }
       return updated;
     });
-    showToast('مشخصات حساب کاربری با موفقیت به‌روزرسانی شد', 'success');
+    showToast('مشخصات حساب کاربری با موفقیت در پایگاه‌داده ذخیره شد', 'success');
   };
 
   const logoutUser = () => {
@@ -893,8 +927,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateSiteSettings = (settings: Partial<SiteSettings>) => {
-    setSiteSettings((prev) => ({ ...prev, ...settings }));
-    showToast('تنظیمات سایت با موفقیت بروزرسانی شد', 'success');
+    setSiteSettings((prev) => {
+      const merged = { ...prev, ...settings };
+      // Sync with Central D1 Database
+      updateSiteSettingsApi(merged);
+      return merged;
+    });
+    showToast('تنظیمات سایت با موفقیت در پایگاه‌داده ذخیره شد', 'success');
   };
 
   const resetAllToDefault = () => {

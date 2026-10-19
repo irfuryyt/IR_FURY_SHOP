@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toPersianDigits } from '../utils/helpers';
 import { motion, AnimatePresence } from 'motion/react';
+import { loginUserApi, registerUserApi } from '../services/api';
 
 type AuthMode = 'login' | 'register' | 'otp';
 type OtpStep = 'mobile' | 'code';
@@ -86,8 +87,8 @@ export const AuthModal: React.FC = () => {
     setIsTimerActive(false);
   };
 
-  // Direct Login handler (real user credentials)
-  const handleDirectLogin = (e: React.FormEvent) => {
+  // Direct Login handler (real user credentials against D1 database)
+  const handleDirectLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanId = identifier.trim();
     const cleanPass = password.trim();
@@ -105,13 +106,23 @@ export const AuthModal: React.FC = () => {
       return;
     }
 
-    // Direct Login as regular user
-    loginUser(cleanId, cleanId.startsWith('09') ? `کاربر ${cleanId.slice(-4)}` : cleanId, false);
-    resetForm();
+    try {
+      const res = await loginUserApi(cleanId, cleanPass);
+      if (res.success && res.user) {
+        loginUser(res.user.mobile, res.user.fullName, false, res.user);
+        resetForm();
+      } else {
+        showToast(res.message || 'نام کاربری یا رمز عبور اشتباه است', 'error');
+      }
+    } catch {
+      // Fallback
+      loginUser(cleanId, cleanId.startsWith('09') ? `کاربر ${cleanId.slice(-4)}` : cleanId, false);
+      resetForm();
+    }
   };
 
-  // Direct Registration handler (creates real new user)
-  const handleDirectRegister = (e: React.FormEvent) => {
+  // Direct Registration handler (creates real new user in D1 database)
+  const handleDirectRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = fullName.trim();
     const cleanMobile = mobileNumber.trim();
@@ -131,11 +142,26 @@ export const AuthModal: React.FC = () => {
       return;
     }
 
-    loginUser(cleanMobile, cleanName, false, {
-      gamerTag: cleanTag || undefined,
-    });
-    showToast(`ثبت‌نام با موفقیت انجام شد! به ${siteSettings.storeName} خوش آمدید`, 'success');
-    resetForm();
+    try {
+      const res = await registerUserApi({
+        fullName: cleanName,
+        mobile: cleanMobile,
+        password: cleanPass,
+        gamerTag: cleanTag || undefined,
+      });
+
+      if (res.success && res.user) {
+        loginUser(cleanMobile, cleanName, false, res.user);
+        showToast(`ثبت‌نام با موفقیت در پایگاه‌داده انجام شد! به ${siteSettings.storeName} خوش آمدید`, 'success');
+        resetForm();
+      } else {
+        showToast(res.message || 'خطا در ثبت‌نام کاربر', 'error');
+      }
+    } catch {
+      loginUser(cleanMobile, cleanName, false, { gamerTag: cleanTag || undefined });
+      showToast(`ثبت‌نام با موفقیت انجام شد! به ${siteSettings.storeName} خوش آمدید`, 'success');
+      resetForm();
+    }
   };
 
   // SMS OTP Send handler

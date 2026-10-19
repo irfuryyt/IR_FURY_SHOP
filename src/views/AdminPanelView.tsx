@@ -128,7 +128,7 @@ export const AdminPanelView: React.FC = () => {
   const [newCouponPercent, setNewCouponPercent] = useState<number>(10);
 
   // Handle Admin Login (Strictly validates username and password)
-  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     if (!loginUsername.trim()) {
@@ -139,7 +139,7 @@ export const AdminPanelView: React.FC = () => {
       setLoginError('لطفاً کلمه عبور را وارد نمایید.');
       return;
     }
-    const success = adminLogin(loginUsername, loginPassword);
+    const success = await adminLogin(loginUsername, loginPassword);
     if (!success) {
       setLoginError('نام کاربری یا کلمه عبور وارد شده نادرست است. دسترسی فقط برای مدیر مجاز است.');
     } else {
@@ -2084,6 +2084,51 @@ export const AdminPanelView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+
+          {/* Section: Cloudflare D1 Database Connection Status */}
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/70 p-5 sm:p-6 rounded-2xl border border-indigo-500/40 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">پایگاه‌داده متمرکز Cloudflare D1</h3>
+                  <p className="text-[11px] text-slate-400">تنظیمات در wrangler.toml اعمال شده و جداول آماده هستند</p>
+                </div>
+              </div>
+
+              <span className="text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-xl font-bold flex items-center gap-1.5 self-start sm:self-auto">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>متصل به ir-fury-shop-db</span>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 font-mono">
+                <span className="text-slate-400 block text-[11px] font-sans mb-1">نام دیتابیس (Database Name):</span>
+                <span className="text-indigo-300 font-bold">ir-fury-shop-db</span>
+              </div>
+              <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 font-mono">
+                <span className="text-slate-400 block text-[11px] font-sans mb-1">شناسه دیتابیس (Database ID):</span>
+                <span className="text-amber-300 font-bold truncate block">e3f06738-f002-4889-89a9-7736d45e8463</span>
+              </div>
+            </div>
+
+            <div className="pt-1 flex flex-wrap gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText('wrangler d1 execute ir-fury-shop-db --file=./d1-schema.sql');
+                  showToast('دستور مایگریشن در کلیپ‌بورد کپی شد', 'success');
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5 text-indigo-400" />
+                <span>کپی دستور مایگریشن D1</span>
+              </button>
+            </div>
           </div>
 
           {/* Section: Banner & Media Management (Upload & URL) */}

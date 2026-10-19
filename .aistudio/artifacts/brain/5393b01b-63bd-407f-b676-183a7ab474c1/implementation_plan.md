@@ -1,105 +1,188 @@
-# آماده‌سازی و انتشار عمومی وب‌سایت فروشگاه (Public Release & Customization)
+# طرح جامع مهاجرت به پایگاه‌داده Cloudflare D1 و Cloudflare Workers (نسخه بازنگری‌شده)
 
-برنامه جامع جهت حذف تمامی داده‌های دمو/پیش‌فرض، راه‌اندازی ثبت‌نام و ورود مستقیم کاربران با مشخصات واقعی، تجهیز داشبورد به ویرایشگر کامل هویت گیمری، و افزودن سیستم آپلود و مدیریت بنر و آواتارها از طریق پنل مدیریت.
+این سند، معماری دقیق و گام‌به‌گام جایگزینی کامل `localStorage` با پایگاه‌داده ابری **Cloudflare D1** و اتصال آن به **Cloudflare Workers** را شرح می‌دهد؛ به شکلی که تمامی اطلاعات کاربران، تنظیمات سایت، بنرها و لوگو در سراسر اینترنت و تمام مرورگرها و دستگاه‌ها به‌صورت متمرکز و یکسان در دسترس باشند.
 
 ---
 
-## بررسی کاربر و تصمیمات کلیدی (User Review & Critical Decisions)
+## بررسی کاربر و موارد بازنگری (User Review & Critical Revisions)
 
 > [!IMPORTANT]
-> با توجه به پاسخ‌های کاربر در مرحله شفاف‌سازی، تصمیمات زیر قطعی شده و در فاز پیاده‌سازی اعمال خواهند شد:
-
-- **سیستم بنر و تصویر پروفایل**: اضافه شدن قابلیت آپلود فایل و درج لینک مستقیم تصویر در پنل مدیریت (Site Settings) همراه با پیش‌نمایش آنی، ذخیره‌سازی محلی مطمئن (Data URL / Storage) و نمایش در هدر، بنر صفحه اصلی (Hero) و پروفایل‌ها.
-- **فرم ورود و ثبت‌نام عمومی**: حذف ۱۰۰٪ تمامی دکمه‌های ورود سریع تستی/دمو (مانند علیرضا حسینی، سارا راد یا دکمه‌های تکمیل خودکار)، خالی بودن کامل تمامی اینپوت‌ها تا هر کاربر اطلاعات واقعی خود (نام، شماره تماس/نام کاربری، و کلمه عبور) را شخصاً ثبت و لاگین کند.
-- **داشبورد کاربری و پروفایل گیمر**: امکان ویرایش و ثبت اطلاعات هویتی کامل توسط کاربر شامل: نام کامل، شماره تماس، ایمیل، تگ گیمری (GamerTag)، آیدی داخل بازی (Game ID / UID)، آیدی دیسکورد، و انتخاب/آپلود آواتار اختصاصی.
-- **امنیت دسترسی مدیریت**: تثبیت عدم وجود هیچ‌گونه لینک یا کلید مدیریتی در پروفایل یا منوهای کاربر عادی و انحصار ورود به پنل ادمین صرفاً از طریق کلید بالای صفحه اصلی همراه با الزام ورود نام کاربری و رمز عبور در هر بار مراجعه.
+> با توجه به درخواست شما برای تمرکز ۱۰۰٪ بر Cloudflare D1 و هماهنگی کامل با Cloudflare Workers:
+> ۱. تمامی اطلاعاتی که قبلاً در `localStorage` مرورگر ذخیره می‌شدند (شامل تنظیمات سایت، بنر، لوگو، پروفایل کاربر، مشخصات گیمری و حساب مدیریت)، به جداول متناظر در **Cloudflare D1** منتقل می‌شوند.
+> ۲. اسکریپت اصلی ورکر کلودفلر (`worker/index.ts` یا `src/worker.ts`) و فایل پیکربندی `wrangler.toml` همراه با اسکریپت ایجاد جداول `d1-schema.sql` پیاده‌سازی می‌شوند تا پروژه بدون هیچ تغییری روی Cloudflare Workers + D1 مستقر شود.
+> ۳. برای اجرای زنده، تست و کامپایل در این محیط، سرور فول‌استک `server.ts` با موتور سازگار با D1 اجرا شده و تمام مسیرهای `/api/*` را به دیتابیس وصل می‌کند.
 
 ---
 
-## ۱. مرور کلی و مفهوم بنیادین (Overview & Core Concept)
+## ۱. ارزیابی و مکان‌های حذف `localStorage` در پروژه
 
-- **هدف نهایی**: تبدیل فروشگاه از نسخه آزمایشی/دمو به یک پلتفرم آماده انتشار عمومی (Production-Ready) که در آن کاربران واقعی بدون مداخله داده‌های تستی ثبت‌نام و خرید کنند، مشخصات گیمری خود را مدیریت نمایند، و مدیر فروشگاه بتواند بدون کدنویسی بنر و آواتارهای سایت را شخصی‌سازی کند.
-- **مخاطبان هدف**: خریداران محصولات گیمینگ (سی‌پی، یوسی، جم)، اشتراک‌های هوش مصنوعی و پرمیوم، و مدیر ارشد فروشگاه.
-- **ارزش کلیدی**: امنیت ورود و حفظ حریم خصوصی، شخصی‌سازی بصری بنر و پروفایل بدون باگ، و تجربه روان ثبت‌نام بدون فرم‌های گیج‌کننده تستی.
+تمامی نقاط زیر که قبلاً از حافظه محلی مرورگر استفاده می‌کردند، بازنویسی شده و به API متصل می‌شوند:
 
----
-
-## ۲. تجربه کاربری و طراحی بصری (UX & Visual Design)
-
-### مسیرهای اصلی کاربر (User Flows)
-1. **ورود و ثبت‌نام کاربر واقعی**:
-   - کاربر روی دکمه «ورود / ثبت‌نام» کلیک می‌کند.
-   - فرمی شکیل، بدون هیچ فیلد پرشده یا دکمه دمو باز می‌شود.
-   - کاربر می‌تواند با نام کاربری یا شماره همراه و رمز عبور دلخواه مستقیماً وارد شود یا در تب ثبت‌نام، حساب جدید با مشخصات واقعی خود بسازد.
-2. **داشبورد و پروفایل گیمری**:
-   - پس از ورود، در داشبورد کاربری فرم جامع ویرایش اطلاعات در دسترس است:
-     - نام و نام خانوادگی
-     - شماره موبایل و ایمیل
-     - نام کاربری گیمری (GamerTag) و شناسه بازی (Player UID)
-     - آیدی دیسکورد جهت پیگیری سفارش‌ها
-     - گالری آواتارهای گیمینگ + امکان بارگذاری آواتار دلخواه
-   - پس از ذخیره، پیام موفقیت‌آمیز نمایش داده شده و اطلاعات بلافاصله در هدر و داشبورد بازتاب داده می‌شود.
-3. **مدیریت بنر و گرافیک سایت در پنل مدیریت**:
-   - در پنل مدیریت > تب «تنظیمات فروشگاه»، بخش ویژه «مدیریت بنر و رسانه سایت» اضافه می‌شود.
-   - امکان بارگذاری فایل تصویری بنر از دستگاه (Image File Upload) و تبدیل مطمئن به Data URL.
-   - امکان درج مستقیم URL تصویر اینترنتی بنر.
-   - پیش‌نمایش زنده در همان لحظه قبل از ذخیره‌سازی.
-   - بنر اعمال‌شده بلافاصله در صفحه اصلی (Hero Bento) جایگزین می‌شود.
-
-### هویت بصری و رنگ‌بندی
-- **زمینه**: دارک مود عمیق (`#020617` و `slate-950`) متناسب با فرهنگ گیمینگ استاندارد.
-- **رنگ‌های برجسته**: ایندیگو (`indigo-500` / `indigo-600`) برای اقدامات اصلی، کهربایی (`amber-400`) برای جوایز کیف‌پول و شارژها، و زمردی (`emerald-400`) برای وضعیت‌های موفقیت.
-- **انضباط بدون پیل (Anti-Slop)**: استفاده از متون بدون کپسول‌های اضافی و حاشیه‌های خطی ۱ پیکسلی ظریف (`border-slate-800`).
+| بخش | وضعیت فعلی (localStorage) | وضعیت جدید (Cloudflare D1 API) |
+| :--- | :--- | :--- |
+| **تنظیمات سایت و بنر** | کلید `furyshop_settings` (فقط روی یک مرورگر) | اندپوینت‌های `GET /api/settings` و `PUT /api/settings` متصل به جدول `site_settings` در D1 |
+| **پروفایل و هویت گیمری** | کلید `furyshop_user` (فقط روی یک مرورگر) | اندپوینت‌های `GET /api/users/profile` و `PUT /api/users/profile` متصل به جدول `users` در D1 |
+| **ورود و ثبت‌نام کاربر** | ایجاد شیء محلی در مرورگر | اندپوینت‌های `POST /api/auth/register` و `POST /api/auth/login` در جدول `users` |
+| **احراز هویت مدیریت** | کلید `furyshop_admin_creds` محلی | اندپوینت‌های `POST /api/admin/login` و `PUT /api/admin/credentials` در جدول `admin_credentials` |
+| **محصولات و سفارش‌ها** | کلیدهای `furyshop_products` و `furyshop_orders` | اندپوینت‌های `/api/products` و `/api/orders` در جداول متناظر D1 |
 
 ---
 
-## ۳. تصمیمات محصول و دادوستدها (Key Product Decisions)
+## ۲. طراحی اسکیما پایگاه‌داده Cloudflare D1 (`d1-schema.sql`)
 
-- **حذف دکمه‌های Demo Login**:
-  - *رویکرد*: حذف کامل بلوک‌های دمو در `AuthModal.tsx` و `AdminPanelView.tsx`.
-  - *دلیل*: سایت عمومی نباید به کاربران غریبه پیشنهاد اکانت‌های پیش‌فرض مانند علیرضا حسینی یا سارا راد را بدهد.
-- **ذخیره‌سازی تصویر بنر و آواتار**:
-  - *رویکرد*: پشتیبانی هم‌زمان از FileReader (آپلود محلی تصویر تا حجم بهینه با فشرده‌سازی خودکار در Canvas) و ورودی URL مستقیم.
-  - *دلیل*: مدیر چه عکسی روی سیستم داشته باشد چه لینکی از وب‌سایت یا هاست دانلود، به آسانی و بدون ارور می‌تواند آن را اعمال کند.
-- **مدل ذخیره‌سازی داده‌های کاربر**:
-  - *رویکرد*: استفاده از ساختار `User` در `StoreContext` با پشتیبانی از فیلدهای گیمری (`gamerTag`, `gameId`, `discordId`, `avatarUrl`) و سینک در `localStorage` پایدار.
+اسکیما بر اساس دستورات استاندارد SQL سازگار با Cloudflare D1 طراحی می‌شود:
+
+```sql
+-- ۱. جدول تنظیمات سراسری فروشگاه، بنر و رسانه
+CREATE TABLE IF NOT EXISTS site_settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  store_name TEXT NOT NULL DEFAULT 'FURY_SHOP',
+  tagline TEXT,
+  hero_headline TEXT,
+  hero_subheadline TEXT,
+  banner_image_url TEXT,
+  banner_image_active INTEGER DEFAULT 1,
+  store_logo_url TEXT,
+  phone TEXT,
+  email TEXT,
+  telegram_username TEXT,
+  whatsapp_number TEXT,
+  instagram_username TEXT,
+  notification_bar_text TEXT,
+  show_notification_bar INTEGER DEFAULT 1,
+  special_banner_title TEXT,
+  special_banner_subtitle TEXT,
+  special_banner_coupon TEXT,
+  special_banner_discount TEXT,
+  special_banner_active INTEGER DEFAULT 1,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ۲. جدول کاربران، اطلاعات گیمری و کیف پول
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  mobile TEXT NOT NULL UNIQUE,
+  email TEXT,
+  password_hash TEXT NOT NULL,
+  gamer_tag TEXT,
+  game_id TEXT,
+  discord_id TEXT,
+  avatar_url TEXT,
+  bio TEXT,
+  role TEXT DEFAULT 'user',
+  wallet_balance INTEGER DEFAULT 150000,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ۳. جدول محصولات فروشگاه
+CREATE TABLE IF NOT EXISTS products (
+  id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE,
+  title TEXT NOT NULL,
+  english_title TEXT,
+  category TEXT NOT NULL,
+  subcategory TEXT,
+  image TEXT,
+  short_description TEXT,
+  full_description TEXT,
+  price INTEGER DEFAULT 0,
+  packages_json TEXT,
+  in_stock INTEGER DEFAULT 1,
+  featured INTEGER DEFAULT 0,
+  rating REAL DEFAULT 5.0,
+  review_count INTEGER DEFAULT 0,
+  delivery_time TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ۴. جدول سفارشات و فاکتورها
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  tracking_code TEXT NOT NULL UNIQUE,
+  user_id TEXT,
+  customer_name TEXT NOT NULL,
+  customer_mobile TEXT NOT NULL,
+  items_json TEXT NOT NULL,
+  total_amount INTEGER NOT NULL,
+  payment_method TEXT,
+  status TEXT DEFAULT 'pending',
+  receipt_image TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ۵. جدول اطلاعات مدیریت
+CREATE TABLE IF NOT EXISTS admin_credentials (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
 
 ---
 
-## ۴. معماری فنی و استراتژی داده (Technical Architecture)
+## ۳. معماری سیستم و هماهنگی با Cloudflare Workers
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       StoreContext                          │
-│  - currentUser (Name, Phone, GamerTag, GameId, Avatar)      │
-│  - siteSettings (storeName, bannerImageUrl, logoImageUrl)    │
-│  - isAdminAuthenticated (strictly non-persistent, on-demand)│
-└──────────────┬──────────────────────────────┬───────────────┘
-               │                              │
-       ┌───────┴────────┐             ┌───────┴────────┐
-       ▼                ▼             ▼                ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  AuthModal   │ │UserProfile   │ │ AdminPanel   │ │  Hero Bento  │
-│ (No defaults │ │ (Full Gamer  │ │ (Banner &    │ │ (Dynamic     │
-│  Clean Inputs│ │  Profile Edit│ │  Avatar      │ │  Banner Image│
-│  Real Reg/Log│ │  Avatar pick)│ │  Upload/URL) │ │  Display)    │
-└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    کلاینت کاربری (React + Vite SPA)            │
+│  - AuthModal (ورود و ثبت‌نام مستقیم با API)                     │
+│  - UserProfileView (دریافت و ذخیره آواتار و تگ گیمری در D1)    │
+│  - AdminPanelView (آپلود بنر و ذخیره در دیتابیس سراسری D1)       │
+│  - StoreContext (همگام‌سازی زنده داده‌ها از طریق API)           │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                   فراخوانی‌های RESTful API (/api/*)
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               لایه سرور / Cloudflare Workers API Handler        │
+│                                                                 │
+│  ┌──────────────────────────────┬────────────────────────────┐  │
+│  │   Cloudflare Worker (Worker) │   محیط لوکال / سرور ای‌آی    │  │
+│  │   env.DB (Cloudflare D1)     │   server.ts (موتور SQLite) │  │
+│  └──────────────────────────────┴────────────────────────────┘  │
+│                                │                                │
+│                                ▼                                │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │             پایگاه‌داده متمرکز Cloudflare D1              │  │
+│  │  - site_settings (بنر، لوگو، متن‌ها)                       │  │
+│  │  - users (پروفایل‌ها، تگ گیمر، شماره، آواتار)             │  │
+│  │  - admin_credentials (نام کاربری و رمز مدیر)              │  │
+│  │  - products & orders (محصولات و سفارش‌ها)                 │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### تغییرات فایل‌های پروژه:
-1. `src/types.ts`:
-   - به‌روزرسانی `SiteSettings` با `bannerImageUrl?: string` و `customBannerActive?: boolean`.
-   - به‌روزرسانی `User` با `gamerTag?: string`, `gameId?: string`, `discordId?: string`, `avatarUrl?: string`, `bio?: string`.
-2. `src/components/AuthModal.tsx`:
-   - پاکسازی کامل بخش‌های ورود سریع دمو و مقادیر اولیه هاردکدشده.
-   - فراهم‌سازی فرم ورود تمیز (نام کاربری/شماره و رمز عبور) و ثبت‌نام سریع و امن.
-3. `src/views/UserProfileView.tsx`:
-   - اضافه کردن تب/بخش «ویرایش مشخصات گیمری» شامل GamerTag، شناسه بازی، دیسکورد، ایمیل و انتخابگر/آپلودر آواتار.
-   - اتصال متدهای ذخیره تغییرات به `updateUserProfile` در کانتکست.
-4. `src/views/AdminPanelView.tsx`:
-   - اضافه کردن بخش «تنظیمات بنر و رسانه سایت» با آپلود فایل و درج آدرس وب بنر، و حذف میانبر تستی یوزر/پس از صفحه لاگین ادمین.
-5. `src/components/Hero.tsx`:
-   - اتصال تصویر پس‌زمینه کارت شاخص به `siteSettings.bannerImageUrl` در صورت تنظیم بودن توسط مدیر.
-6. `src/context/StoreContext.tsx`:
-   - افزودن تابع `updateUserProfile` برای بروزرسانی فوری اطلاعات کاربر لاگین‌شده.
-   - پشتیبانی از تنظیمات جدید بنر در `siteSettings`.
+---
+
+## ۴. برنامه گام‌به‌گام پیاده‌سازی و فایل‌های پروژه
+
+1. **فایل‌های اختصاصی Cloudflare**:
+   - `d1-schema.sql`: فایل کامل دستورات ایجاد جداول D1 و مایگریشن اولیه.
+   - `wrangler.toml`: پیکربندی Worker با بایندینگ D1:
+     ```toml
+     name = "furyshop-worker"
+     main = "worker/index.ts"
+     compatibility_date = "2024-01-01"
+
+     [[d1_databases]]
+     binding = "DB"
+     database_name = "furyshop-d1"
+     database_id = "xxxx-xxxx-xxxx"
+     ```
+   - `worker/index.ts`: اسکریپت ورکر کلودفلر که تمامی درخواست‌های `/api/*` را مستقیماً با استفاده از `env.DB.prepare(...).bind(...).run() / .all()` پردازش می‌کند و فایل‌های استاتیک فرانت‌اند را تحویل می‌دهد.
+2. **سرور اجرایی محیط فعلی (`server.ts`)**:
+   - یکپارچه‌سازی سرور Express با شبیه‌ساز D1 (یا دیتابیس SQLite فایل‌محور در `data/store.db`)، تا همین ساختار و اندپوینت‌ها در پورت ۳۰۰۰ نیز بدون کوچک‌ترین تفاوت پاسخگو باشند.
+   - تزریق خودکار (Auto-Seed) تنظیمات فعلی، بنرها و محصولات در صورت خالی بودن دیتابیس.
+3. **سرویس ارتباطی کلاینت (`src/services/api.ts`)**:
+   - پیاده‌سازی متدهای `fetchSiteSettings()`, `updateSiteSettingsApi()`, `registerUserApi()`, `loginUserApi()`, `updateUserProfileApi()`, `adminLoginApi()`, `updateAdminCredsApi()`.
+4. **به‌روزرسانی `StoreContext.tsx`**:
+   - جایگزینی توابع واکشی و ذخیره با API.
+   - افزودن لایه کش اضطراری آفلاین به عنوان Fallback در صورت قطعی شبکه.
+5. **به‌روزرسانی `package.json`**:
+   - تنظیم اسکریپت‌های `"dev": "tsx server.ts"` و اسکریپت‌های کلودفلر `"deploy:worker": "wrangler deploy"`.
+6. **کامپایل و تایید نهایی با `compile_applet`**:
+   - اجرای تست کامپایل برای اطمینان از سلامت کامل تایپ‌ها و عدم وجود خطا.
