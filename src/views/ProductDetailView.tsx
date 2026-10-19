@@ -603,7 +603,7 @@ export const ProductDetailView: React.FC = () => {
                 <textarea
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="متن نظر یا دیدگاه شما در رابطه با سرعت تحویل و کیفیت خدمات FURY_ADMIN..."
+                  placeholder="متن نظر یا دیدگاه شما در رابطه با سرعت تحویل و کیفیت خدمات FURY_SHOP..."
                   rows={3}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-amber-500"
                   required

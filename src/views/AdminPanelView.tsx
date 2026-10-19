@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product, ProductPackage, Order, BlogPost, Coupon, SiteSettings } from '../types';
 import { formatToman, toPersianDigits } from '../utils/helpers';
 import { PRESET_IMAGES, PresetImage } from '../data/presetImages';
+import { SalesAnalyticsWidget } from '../components/SalesAnalyticsWidget';
 import {
   LayoutDashboard,
   Package,
@@ -33,6 +34,7 @@ import {
   Link as LinkIcon,
   ShieldCheck,
   Lock,
+  KeyRound,
   LogOut,
   RefreshCw,
   Layers,
@@ -69,16 +71,26 @@ export const AdminPanelView: React.FC = () => {
     resetToInitialData,
     setCurrentView,
     showToast,
+    currentUser,
+    setIsAuthModalOpen,
     isAdminAuthenticated,
+    setIsAdminAuthenticated,
+    adminCredentials,
+    updateAdminCredentials,
     adminLogin,
     adminLogout,
   } = useStore();
 
-  // Login form state - starts completely empty as requested by user
+  // Login form state
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  // Admin credentials update state in Settings tab
+  const [newAdminUsername, setNewAdminUsername] = useState(adminCredentials?.username || 'IR_FURY_YT');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Active tab state
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'images' | 'orders' | 'settings' | 'blog' | 'coupons'>('dashboard');
@@ -115,13 +127,41 @@ export const AdminPanelView: React.FC = () => {
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponPercent, setNewCouponPercent] = useState<number>(10);
 
-  // Handle Admin Login
+  // Handle Admin Login (Strictly validates username and password)
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    if (!loginUsername.trim()) {
+      setLoginError('لطفاً نام کاربری مدیر را وارد نمایید.');
+      return;
+    }
+    if (!loginPassword.trim()) {
+      setLoginError('لطفاً کلمه عبور را وارد نمایید.');
+      return;
+    }
     const success = adminLogin(loginUsername, loginPassword);
     if (!success) {
-      setLoginError('نام کاربری یا کلمه عبور وارد شده نادرست است.');
+      setLoginError('نام کاربری یا کلمه عبور وارد شده نادرست است. دسترسی فقط برای مدیر مجاز است.');
+    } else {
+      setLoginUsername('');
+      setLoginPassword('');
+    }
+  };
+
+  // Handle Changing Admin Credentials
+  const handleSaveAdminCredentials = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminUsername.trim()) {
+      showToast('نام کاربری نمی‌تواند خالی باشد', 'error');
+      return;
+    }
+    if (!newAdminPassword.trim()) {
+      showToast('لطفاً کلمه عبور جدید را وارد کنید', 'error');
+      return;
+    }
+    const ok = updateAdminCredentials(newAdminUsername, newAdminPassword);
+    if (ok) {
+      setNewAdminPassword('');
     }
   };
 
@@ -206,6 +246,38 @@ export const AdminPanelView: React.FC = () => {
     processImageForAdmin(file, isQuickModal);
   };
 
+  const handleBannerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('لطفاً یک فایل تصویری (JPG, PNG یا WEBP) انتخاب کنید', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        updateSiteSettings({ bannerImageUrl: result, bannerImageActive: true });
+        showToast('بنر جدید فروشگاه با موفقیت بارگذاری و اعمال شد', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        updateSiteSettings({ storeLogoUrl: result });
+        showToast('لوگوی جدید فروشگاه با موفقیت بارگذاری و اعمال شد', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
@@ -288,25 +360,25 @@ export const AdminPanelView: React.FC = () => {
   );
 
   // ==========================================
-  // IF NOT AUTHENTICATED -> SHOW ADMIN LOGIN GATE
+  // IF NOT AUTHENTICATED -> SHOW STRICT ACCESS GATE
   // ==========================================
   if (!isAdminAuthenticated) {
     return (
-      <div className="py-12 sm:py-20 max-w-lg mx-auto px-4 text-right">
+      <div className="py-12 sm:py-20 max-w-md mx-auto px-4 text-right">
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-3">
             <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/20">
               <Lock className="w-8 h-8" />
             </div>
-            <h1 className="text-2xl font-black text-white">ورود به پنل مدیریت {siteSettings.storeName}</h1>
-            <p className="text-xs text-slate-400">
-              جهت ورود به بخش مدیریت، نام کاربری و رمز عبور امنیتی را وارد نمایید.
+            <h1 className="text-2xl font-black text-white">ورود اختصاصی مدیریت {siteSettings.storeName}</h1>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              این بخش کاملاً محافظت‌شده است و تنها مدیر با نام کاربری و رمز عبور اختصاصی امکان دسترسی دارد.
             </p>
           </div>
 
           {loginError && (
-            <div className="bg-rose-950/50 border border-rose-800 text-rose-300 p-3 rounded-xl text-xs flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
+            <div className="bg-rose-950/70 border border-rose-800 text-rose-300 p-3.5 rounded-xl text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{loginError}</span>
             </div>
           )}
@@ -321,10 +393,9 @@ export const AdminPanelView: React.FC = () => {
                 dir="ltr"
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="نام کاربری..."
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono outline-none transition-all"
-                required
+                placeholder="نام کاربری مدیر..."
                 autoFocus
+                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-3 text-sm text-white font-mono outline-none transition-all placeholder:text-slate-600"
               />
             </div>
 
@@ -338,14 +409,14 @@ export const AdminPanelView: React.FC = () => {
                   dir="ltr"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="رمز عبور..."
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono outline-none transition-all pl-10"
-                  required
+                  placeholder="••••••••"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3.5 py-3 text-sm text-white font-mono outline-none transition-all pl-10 placeholder:text-slate-600"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  title={showPassword ? 'مخفی‌سازی رمز' : 'نمایش رمز'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -354,19 +425,24 @@ export const AdminPanelView: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
               <Lock className="w-4 h-4" />
-              <span>تایید و ورود به پنل مدیریت</span>
+              <span>ورود به پنل مدیریت</span>
             </button>
+
+            <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>دسترسی اختصاصی مدیریت با احراز هویت دوطرفه و کلمه عبور رمزگذاری‌شده.</span>
+            </div>
           </form>
 
-          <div className="pt-2 text-center">
+          <div className="pt-2 text-center border-t border-slate-800/80">
             <button
               onClick={() => setCurrentView('home')}
-              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
             >
-              بازگشت به فروشگاه {siteSettings.storeName}
+              ← بازگشت به صفحه اصلی فروشگاه
             </button>
           </div>
         </div>
@@ -508,6 +584,9 @@ export const AdminPanelView: React.FC = () => {
               <span className="text-[11px] text-slate-500">با رضایت کامل کاربران</span>
             </div>
           </div>
+
+          {/* Real-time Sales Statistics & Recharts Line Chart Widget */}
+          <SalesAnalyticsWidget />
 
           {/* Quick Actions Panel */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
@@ -1938,6 +2017,261 @@ export const AdminPanelView: React.FC = () => {
                 <Eye className="w-4 h-4" />
                 <span>مشاهده سایت</span>
               </button>
+            </div>
+          </div>
+
+          {/* Section 0: Admin Security & Custom Credentials (User & Pass) */}
+          <div className="bg-gradient-to-br from-indigo-950/80 via-slate-950 to-slate-950 p-5 sm:p-6 rounded-2xl border-2 border-indigo-500/40 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-900/40 pb-3">
+              <h3 className="text-sm font-black text-indigo-300 flex items-center gap-2 border-r-2 border-indigo-500 pr-2.5">
+                <Lock className="w-4 h-4 text-indigo-400" />
+                <span>تنظیمات نام کاربری و کلمه عبور مدیر (یوزر و پسورد من)</span>
+              </h3>
+              <span className="text-[11px] bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-lg border border-indigo-500/30 font-mono">
+                نام کاربری فعال: {adminCredentials?.username || 'IR_FURY_YT'}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              شما می‌توانید نام کاربری و رمز ورود اختصاصی خود را در این بخش تعیین یا تغییر دهید. با این کار، فقط خودتان با این اطلاعات قادر به ورود به پنل مدیریت خواهید بود و هیچ کاربر عادی یا فرد دیگری نمی‌تواند به مدیریت وارد شود.
+            </p>
+
+            <form onSubmit={handleSaveAdminCredentials} className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  نام کاربری مدیر (Username)
+                </label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={newAdminUsername}
+                  onChange={(e) => setNewAdminUsername(e.target.value)}
+                  placeholder="مثال: IR_FURY_YT یا نام دلخواه شما"
+                  className="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  کلمه عبور جدید مدیر (Password)
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    dir="ltr"
+                    value={newAdminPassword}
+                    onChange={(e) => setNewAdminPassword(e.target.value)}
+                    placeholder="رمز عبور دلخواه جدید..."
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none pl-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 flex justify-end pt-1">
+                <button
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>ذخیره نام کاربری و رمز عبور اختصاصی مدیر</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Section: Banner & Media Management (Upload & URL) */}
+          <div className="bg-slate-950 p-5 sm:p-6 rounded-2xl border-2 border-indigo-500/30 space-y-5 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">مدیریت بنر اصلی و تصاویر رسانه‌ای سایت</h3>
+                  <p className="text-[11px] text-slate-400">آپلود عکس بنر از کامپیوتر/موبایل یا درج لینک مستقیم با پیش‌نمایش آنی در صفحه اصلی</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                  <input
+                    type="checkbox"
+                    checked={siteSettings.bannerImageActive !== false}
+                    onChange={(e) => updateSiteSettings({ bannerImageActive: e.target.checked })}
+                    className="w-4 h-4 rounded accent-indigo-600 cursor-pointer"
+                  />
+                  <span>نمایش بنر در صفحه اصلی</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Banner Preview Card */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+              <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center items-center text-center overflow-hidden">
+                <p className="text-xs font-bold text-slate-300 mb-2 w-full text-right flex items-center justify-between">
+                  <span>پیش‌نمایش زنده بنر اصلی فروشگاه:</span>
+                  {siteSettings.bannerImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateSiteSettings({ bannerImageUrl: '' });
+                        showToast('بنر اختصاصی حذف شد و به حالت پیش‌فرض بازگشت', 'info');
+                      }}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>حذف بنر</span>
+                    </button>
+                  )}
+                </p>
+
+                <div className="w-full h-44 sm:h-52 rounded-xl bg-slate-950 border border-slate-800 relative overflow-hidden flex items-center justify-center">
+                  {siteSettings.bannerImageUrl ? (
+                    <img
+                      src={siteSettings.bannerImageUrl}
+                      alt="بنر اختصاصی فروشگاه"
+                      className="w-full h-full object-cover object-center"
+                    />
+                  ) : (
+                    <div className="text-slate-500 flex flex-col items-center gap-2 p-4">
+                      <ImageIcon className="w-10 h-10 text-slate-600" />
+                      <span className="text-xs">هنوز تصویری برای بنر بارگذاری نشده است (استفاده از پس‌زمینه پیش‌فرض)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload & URL Controls */}
+              <div className="lg:col-span-6 space-y-4">
+                {/* 1. Upload from Device */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    ۱. آپلود مستقیم فایل بنر از دستگاه شما (فایل ارسالی):
+                  </label>
+                  <label className="flex items-center justify-center gap-2.5 p-4 bg-slate-900/80 hover:bg-slate-900 border border-dashed border-indigo-500/50 hover:border-indigo-400 rounded-xl cursor-pointer transition-all group">
+                    <Upload className="w-5 h-5 text-indigo-400 group-hover:-translate-y-0.5 transition-transform" />
+                    <span className="text-xs text-slate-300 group-hover:text-white font-medium">
+                      کلیک کنید یا فایل بنر را انتخاب نمایید (JPG, PNG یا WEBP تا ۵MB)
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* 2. Direct Image URL Input */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    ۲. یا درج آدرس اینترنتی مستقیم عکس بنر (Direct Image URL):
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="url"
+                        dir="ltr"
+                        value={siteSettings.bannerImageUrl || ''}
+                        onChange={(e) => updateSiteSettings({ bannerImageUrl: e.target.value, bannerImageActive: true })}
+                        placeholder="https://example.com/banner.jpg"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none focus:border-indigo-500"
+                      />
+                      <LinkIcon className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    </div>
+                    {siteSettings.bannerImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateSiteSettings({ bannerImageUrl: '' });
+                          showToast('آدرس بنر پاک شد', 'info');
+                        }}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-700 cursor-pointer"
+                      >
+                        پاک کردن
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Preset Gaming Banners */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    ۳. یا انتخاب فوری از پس‌زمینه‌های گیمینگ آماده با کیفیت:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateSiteSettings({
+                          bannerImageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1600&q=80',
+                          bannerImageActive: true,
+                        });
+                        showToast('بنر گیمینگ نئونی اعمال شد', 'success');
+                      }}
+                      className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-[11px] text-slate-300 hover:text-white transition-all text-center cursor-pointer"
+                    >
+                      <div className="h-10 rounded-lg overflow-hidden mb-1">
+                        <img
+                          src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=300&q=80"
+                          alt="تم گیمینگ"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span>گیمینگ نئونی</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateSiteSettings({
+                          bannerImageUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1600&q=80',
+                          bannerImageActive: true,
+                        });
+                        showToast('بنر کنسول و کنترلر اعمال شد', 'success');
+                      }}
+                      className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-[11px] text-slate-300 hover:text-white transition-all text-center cursor-pointer"
+                    >
+                      <div className="h-10 rounded-lg overflow-hidden mb-1">
+                        <img
+                          src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=300&q=80"
+                          alt="تم کنسول"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span>کنترلر گیمینگ</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateSiteSettings({
+                          bannerImageUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1600&q=80',
+                          bannerImageActive: true,
+                        });
+                        showToast('بنر رترو سایبر اعمال شد', 'success');
+                      }}
+                      className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-[11px] text-slate-300 hover:text-white transition-all text-center cursor-pointer"
+                    >
+                      <div className="h-10 rounded-lg overflow-hidden mb-1">
+                        <img
+                          src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=300&q=80"
+                          alt="تم سایبر"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span>سایبرپانک</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

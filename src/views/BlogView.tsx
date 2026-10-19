@@ -27,7 +27,7 @@ export const BlogView: React.FC = () => {
       <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 mb-10 shadow-xl">
         <div className="flex items-center gap-2 text-amber-400 text-xs font-bold mb-2">
           <BookOpen className="w-4 h-4" />
-          <span>مجله تخصصی و وبلاگ FURY_ADMIN</span>
+          <span>مجله تخصصی و وبلاگ FURY_SHOP</span>
         </div>
         <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-3">
           آخرین اخبار، ترفندها و آموزش‌های دنیای بازی

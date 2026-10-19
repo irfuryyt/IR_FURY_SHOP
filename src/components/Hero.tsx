@@ -13,6 +13,7 @@ import {
   Tag,
   Gamepad2,
   Lock,
+  SearchCode,
 } from 'lucide-react';
 import { formatToman, toPersianDigits } from '../utils/helpers';
 import { motion } from 'motion/react';
@@ -49,6 +50,19 @@ export const Hero: React.FC = () => {
           
           {/* Bento Tile 1: Main Large Hero Card (Col 12 / LG: Col 8) */}
           <div className="md:col-span-12 lg:col-span-8 bg-gradient-to-br from-indigo-950 via-slate-900 to-[#020617] rounded-3xl relative overflow-hidden border border-indigo-500/30 p-6 sm:p-10 flex flex-col justify-between shadow-2xl group min-h-[380px]">
+            {/* Custom Site Banner (if uploaded or set via Admin Panel) */}
+            {siteSettings.bannerImageUrl && siteSettings.bannerImageActive !== false && (
+              <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <img
+                  src={siteSettings.bannerImageUrl}
+                  alt={siteSettings.storeName}
+                  className="w-full h-full object-cover object-center opacity-35 group-hover:opacity-45 transition-opacity duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent" />
+              </div>
+            )}
+
             {/* Background Ambient SVG Orb & Texture */}
             <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none" />
             <div className="absolute left-[-10%] bottom-[-15%] opacity-25 scale-125 pointer-events-none">
@@ -57,8 +71,68 @@ export const Hero: React.FC = () => {
               </svg>
             </div>
 
-            {/* Top Badge */}
-            <div className="relative z-10">
+            {/* Visual Graphic Showcase on the opposite side of text (left in RTL) */}
+            <div className="hidden lg:flex flex-col justify-center items-end absolute left-6 top-1/2 -translate-y-1/2 w-72 pointer-events-none select-none z-10">
+              {/* Floating Badge 1: CoD CP */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="bg-slate-900/90 backdrop-blur-md border border-amber-500/30 shadow-2xl shadow-amber-500/10 rounded-2xl p-3 flex items-center gap-3 w-64 mb-3 transform hover:scale-105 transition-transform"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-slate-950 font-black text-xs shadow-md shrink-0">
+                  CP
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <p className="text-xs font-bold text-white truncate">سی پی کالاف دیوتی</p>
+                  <p className="text-[10px] text-amber-300 flex items-center gap-1 mt-0.5">
+                    <Zap className="w-3 h-3 text-amber-400 inline" />
+                    <span>واریز آنی در کمتر از ۵ دقیقه</span>
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Floating Badge 2: PUBG UC */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.35 }}
+                className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 shadow-2xl shadow-indigo-500/10 rounded-2xl p-3 flex items-center gap-3 w-64 mb-3 mr-4 transform hover:scale-105 transition-transform"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-black text-xs shadow-md shrink-0">
+                  UC
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <p className="text-xs font-bold text-white truncate">یوسی پابجی موبایل</p>
+                  <p className="text-[10px] text-indigo-300 flex items-center gap-1 mt-0.5">
+                    <ShieldCheck className="w-3 h-3 text-indigo-400 inline" />
+                    <span>شارژ مستقیم و قانونی با آیدی</span>
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Floating Badge 3: Free Fire Diamonds */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="bg-slate-900/90 backdrop-blur-md border border-emerald-500/30 shadow-2xl shadow-emerald-500/10 rounded-2xl p-3 flex items-center gap-3 w-64"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white font-black text-xs shadow-md shrink-0">
+                  💎
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <p className="text-xs font-bold text-white truncate">جم فری فایر</p>
+                  <p className="text-[10px] text-emerald-300 flex items-center gap-1 mt-0.5">
+                    <Sparkles className="w-3 h-3 text-emerald-400 inline" />
+                    <span>آفر هفتگی و ماهانه</span>
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Top Badge & Text */}
+            <div className="relative z-10 max-w-lg">
               <span className="inline-flex items-center gap-1.5 bg-indigo-500/20 text-indigo-300 px-3.5 py-1 rounded-full text-xs font-bold border border-indigo-500/30 mb-4">
                 <Zap className="w-3.5 h-3.5 text-indigo-400" />
                 <span>تحویل آنی و خودکار ۲۴ ساعته</span>
@@ -69,7 +143,7 @@ export const Hero: React.FC = () => {
                 <span className="text-indigo-400">و ارز تمامی بازی‌ها</span>
               </h1>
 
-              <p className="text-slate-300 text-sm sm:text-base max-w-lg leading-relaxed mb-6">
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
                 ارزان‌ترین نرخ خرید مستقیم سی پی کالاف دیوتی، یوسی پابجی، جم فری فایر و اشتراک‌های قانونی هوش مصنوعی با فعال‌سازی زیر ۱۰ دقیقه
               </p>
             </div>
@@ -384,31 +458,38 @@ export const Hero: React.FC = () => {
             </div>
           </div>
 
-          {/* Bento Tile 6: Admin Dashboard / VIP Support Card (Col 12 / LG: Col 4) */}
-          <div className="md:col-span-12 lg:col-span-4 bg-indigo-600 rounded-3xl p-6 relative overflow-hidden shadow-2xl flex flex-col justify-between">
+          {/* Bento Tile 6: Order Tracking & VIP Support (Col 12 / LG: Col 4) */}
+          <div className="md:col-span-12 lg:col-span-4 bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 rounded-3xl p-6 relative overflow-hidden shadow-2xl flex flex-col justify-between">
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
                 <span className="bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm">
-                  داشبورد هوشمند
+                  پیگیری و پشتیبانی
                 </span>
-                <LayoutDashboard className="w-5 h-5 text-indigo-100" />
+                <Headphones className="w-5 h-5 text-indigo-100" />
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-white mb-2">
-                پنل مدیریت فروشگاه
+                پیگیری آنی سفارشات
               </h3>
               <p className="text-indigo-100 text-xs leading-relaxed mb-6">
-                مدیریت کامل قیمت‌ها، شارژ سریع آیتم‌ها، وضعیت سفارش‌ها و کدهای تخفیف با داشبورد پیشرفته ادمین {siteSettings.storeName}.
+                پیگیری لحظه‌ای وضعیت سفارش با کد رهگیری اختصاصی و پشتیبانی ۲۴ ساعته در تلگرام {siteSettings.storeName}.
               </p>
             </div>
 
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col sm:flex-row gap-2">
               <button
-                id="bento-admin-enter-btn"
-                onClick={() => setCurrentView('admin')}
-                className="bg-white hover:bg-slate-100 text-indigo-700 font-black py-3 rounded-2xl text-center w-full shadow-xl shadow-black/20 transition-all text-sm cursor-pointer flex items-center justify-center gap-2"
+                id="bento-tracking-enter-btn"
+                onClick={() => setCurrentView('order-tracking')}
+                className="bg-white hover:bg-slate-100 text-indigo-700 font-black py-3 px-4 rounded-2xl text-center flex-1 shadow-xl shadow-black/20 transition-all text-xs cursor-pointer flex items-center justify-center gap-2"
               >
-                <Lock className="w-4 h-4 text-indigo-600" />
-                <span>ورود به پنل مدیریت</span>
+                <SearchCode className="w-4 h-4 text-indigo-600" />
+                <span>استعلام وضعیت سفارش</span>
+              </button>
+              <button
+                id="bento-contact-enter-btn"
+                onClick={() => setCurrentView('contact')}
+                className="bg-indigo-950/60 hover:bg-indigo-900/80 text-white border border-indigo-400/30 font-bold py-3 px-4 rounded-2xl text-center shadow-lg transition-all text-xs cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>پشتیبانی</span>
               </button>
             </div>
 

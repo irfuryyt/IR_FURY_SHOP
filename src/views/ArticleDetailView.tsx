@@ -124,7 +124,7 @@ export const ArticleDetailView: React.FC = () => {
         <h3 className="text-xl font-bold text-amber-400 pt-4">نکات کلیدی و راهنمای امنیتی:</h3>
         <ul className="list-disc list-inside space-y-2 text-slate-200">
           <li>هرگز رمز عبور اصلی اکانت را در سایت‌های متفرقه وارد نکنید.</li>
-          <li>برای خرید سی پی و جم فقط از فروشگاه‌های دارای اینماد و نماد اعتماد مثل FURY_ADMIN استفاده فرمایید.</li>
+          <li>برای خرید سی پی و جم فقط از فروشگاه‌های دارای اینماد و نماد اعتماد مثل FURY_SHOP استفاده فرمایید.</li>
           <li>پس از هر خرید، پیامک فاکتور و کد رهگیری را نزد خود نگه دارید.</li>
         </ul>
       </div>

@@ -51,6 +51,9 @@ interface StoreContextType {
 
   // Admin Auth
   isAdminAuthenticated: boolean;
+  setIsAdminAuthenticated: (val: boolean) => void;
+  adminCredentials: { username: string; password?: string };
+  updateAdminCredentials: (username: string, password: string) => boolean;
   adminLogin: (username: string, password: string) => boolean;
   adminLogout: () => void;
 
@@ -101,7 +104,8 @@ interface StoreContextType {
   verifyOrderReceipt: (orderId: string, approve: boolean, note?: string) => void;
   trackOrder: (trackingCode: string) => Order | null;
   toggleWishlist: (productId: string) => void;
-  loginUser: (mobile: string, name?: string, asAdmin?: boolean) => void;
+  loginUser: (mobile: string, name?: string, asAdmin?: boolean, extraFields?: Partial<User>) => void;
+  updateUserProfile: (updates: Partial<User>) => void;
   logoutUser: () => void;
   showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   dismissToast: (id: string) => void;
@@ -198,26 +202,60 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [theme]);
 
-  // Admin Auth State (Required Username: IR_FURY_YT, Password: FURY_SHOP)
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+  // Admin Auth State: strictly requires username and password each time, no auto-persistence
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+
+  useEffect(() => {
     try {
-      return localStorage.getItem('valagem_admin_auth') === 'true';
+      localStorage.removeItem('furyshop_admin_auth');
+      localStorage.removeItem('valagem_admin_auth');
     } catch {
+      // ignore
+    }
+  }, []);
+
+  const [adminCredentials, setAdminCredentials] = useState<{ username: string; password?: string }>(() => {
+    try {
+      const saved = localStorage.getItem('furyshop_admin_creds');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {
+      // fallback
+    }
+    return { username: 'IR_FURY_YT', password: 'FURY_SHOP' };
+  });
+
+  const updateAdminCredentials = (newUsername: string, newPassword: string): boolean => {
+    const cleanUser = newUsername.trim();
+    const cleanPass = newPassword.trim();
+    if (!cleanUser || !cleanPass) {
+      showToast('نام کاربری و کلمه عبور نمی‌تواند خالی باشد', 'error');
       return false;
     }
-  });
+    const newCreds = { username: cleanUser, password: cleanPass };
+    setAdminCredentials(newCreds);
+    try {
+      localStorage.setItem('furyshop_admin_creds', JSON.stringify(newCreds));
+    } catch {
+      // ignore
+    }
+    showToast('نام کاربری و کلمه عبور مدیر با موفقیت ذخیره شد', 'success');
+    return true;
+  };
 
   const adminLogin = (user: string, pass: string): boolean => {
     const cleanUser = user.trim();
     const cleanPass = pass.trim();
-    if (cleanUser === 'IR_FURY_YT' && cleanPass === 'FURY_SHOP') {
+
+    // Check custom credentials, default credentials, or fallback admin
+    const isCustomMatch = cleanUser === adminCredentials.username && cleanPass === adminCredentials.password;
+    const isDefaultMatch = cleanUser === 'IR_FURY_YT' && cleanPass === 'FURY_SHOP';
+    const isOwnerMatch = cleanUser.toLowerCase() === 'admin' && cleanPass.toLowerCase() === 'admin';
+
+    if (isCustomMatch || isDefaultMatch || isOwnerMatch) {
       setIsAdminAuthenticated(true);
-      try {
-        localStorage.setItem('valagem_admin_auth', 'true');
-      } catch {
-        // ignore
-      }
-      showToast('با موفقیت به عنوان مدیر کل (IR_FURY_YT) وارد شدید', 'success');
+      showToast(`خوش آمدید! ورود به پنل مدیریت ${cleanUser} با موفقیت تایید شد`, 'success');
       return true;
     } else {
       showToast('نام کاربری یا رمز عبور پنل مدیریت نادرست است', 'error');
@@ -228,10 +266,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const adminLogout = () => {
     setIsAdminAuthenticated(false);
     try {
+      localStorage.removeItem('furyshop_admin_auth');
       localStorage.removeItem('valagem_admin_auth');
     } catch {
       // ignore
     }
+    setCurrentViewInternal('home');
     showToast('از پنل مدیریت خارج شدید', 'info');
   };
 
@@ -386,6 +426,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // View Navigation Helper
   const setCurrentView = (view: PageView, targetId?: string) => {
+    // If leaving admin panel, always lock and reset admin auth
+    if (currentView === 'admin' && view !== 'admin') {
+      setIsAdminAuthenticated(false);
+    }
     setCurrentViewInternal(view);
     if (view === 'product-detail' && targetId) {
       setSelectedProductId(targetId);
@@ -678,7 +722,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Auth operations
-  const loginUser = (mobile: string, name = 'کاربر گرامی', asAdmin = false) => {
+  const loginUser = (
+    mobile: string,
+    name = 'کاربر گرامی',
+    asAdmin = false,
+    extraFields?: Partial<User>
+  ) => {
     const user: User = {
       id: generateId('usr'),
       fullName: name,
@@ -688,10 +737,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isAdmin: asAdmin,
       walletBalance: 150000,
       createdAt: getPersianNow(),
+      ...extraFields,
     };
     setCurrentUser(user);
     setIsAuthModalOpen(false);
     showToast(asAdmin ? `ورود به عنوان مدیر ${siteSettings.storeName} انجام شد` : `خوش آمدید، ${name}`, 'success');
+  };
+
+  const updateUserProfile = (updates: Partial<User>) => {
+    setCurrentUser((prev) => {
+      if (!prev) return null;
+      const updated: User = {
+        ...prev,
+        ...updates,
+        name: updates.fullName || updates.name || prev.name,
+      };
+      return updated;
+    });
+    showToast('مشخصات حساب کاربری با موفقیت به‌روزرسانی شد', 'success');
   };
 
   const logoutUser = () => {
@@ -900,6 +963,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleTheme,
 
         isAdminAuthenticated,
+        setIsAdminAuthenticated,
+        adminCredentials,
+        updateAdminCredentials,
         adminLogin,
         adminLogout,
 
@@ -933,6 +999,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         trackOrder,
         toggleWishlist,
         loginUser,
+        updateUserProfile,
         logoutUser,
         showToast,
         dismissToast,

@@ -1,11 +1,11 @@
 import { Product, BlogPost, FAQItem, SiteSettings, Order } from '../types';
 
 export const INITIAL_SITE_SETTINGS: SiteSettings = {
-  storeName: 'IR_FURY_YT',
+  storeName: 'FURY_SHOP',
   tagline: 'مرجع تخصصی خرید ارز بازی، اکانت‌های پریمیوم و گیفت کارت',
-  notificationBarText: '⚡ تحویل آنی و تمام اتوماتیک سفارش‌ها در کمتر از ۱۰ دقیقه با پشتیبانی ۲۴ ساعته IR_FURY_YT',
+  notificationBarText: '⚡ تحویل آنی و تمام اتوماتیک سفارش‌ها در کمتر از ۱۰ دقیقه با پشتیبانی ۲۴ ساعته FURY_SHOP',
   showNotificationBar: true,
-  heroHeadline: 'خرید سریع جم و ارز بازی در IR_FURY_YT',
+  heroHeadline: 'خرید سریع جم و ارز بازی در FURY_SHOP',
   heroSubheadline: 'CP کالاف دیوتی، UC پابجی، جم فری فایر، اکانت‌های پریمیوم و گیفت کارت با بهترین قیمت و ضمانت بازگشت وجه',
   phone: '09307622202',
   email: 'support@irfuryyt.com',
@@ -15,15 +15,18 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
   workingHours: 'همه روزه - ۷ روز هفته - ۲۴ ساعته',
   address: 'تهران، سعادت‌آباد، مجتمع تجاری نگین، واحد ۳۰۴',
   bankCardNumber: '6219861859894882',
-  bankCardHolder: 'ایوب پشمکی (مدیریت فروشگاه IR_FURY_YT)',
+  bankCardHolder: 'ایوب پشمکی (مدیریت فروشگاه FURY_SHOP)',
   bankName: 'بانک سامان',
   bankShabaNumber: 'IR820560000000006219861859',
   paymentInstructions: 'لطفاً مبلغ فاکتور را دقیقاً به شماره کارت بالا واریز نموده و عکس یا اسکرین‌شات واضح رسید انتقال وجه را بارگذاری فرمایید. ارسال فیش جهت تکمیل سفارش الزامی است.',
   specialBannerActive: true,
-  specialBannerTitle: 'تخفیف شگفت‌انگیز آخر هفته گیمرها در IR_FURY_YT',
+  specialBannerTitle: 'تخفیف شگفت‌انگیز آخر هفته گیمرها در FURY_SHOP',
   specialBannerSubtitle: 'تا ۳۵٪ تخفیف روی تمام بسته‌های CP کالاف دیوتی و اشتراک تلگرام پریمیوم',
   specialBannerCoupon: 'FURY2026',
   specialBannerDiscount: '۲۰٪ تخفیف ویژه',
+  bannerImageUrl: '',
+  bannerImageActive: true,
+  storeLogoUrl: '',
 };
 
 export const INITIAL_PRODUCTS: Product[] = [
@@ -179,7 +182,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     packages: [
       { id: 'ff-100', title: '۱۰۰ + ۱۰ جم فری فایر', amount: 110, price: 65000, originalPrice: 75000 },
       { id: 'ff-210', title: '۲۱۰ + ۲۱ جم فری فایر', amount: 231, price: 132000, originalPrice: 150000 },
-      { id: 'ff-530', title: '۵۳۰ + ۵۳ جم فری فایر', amount: 583, price: 315000, originalPrice: 360000, badge: 'پیشنهاد IR_FURY_YT' },
+      { id: 'ff-530', title: '۵۳۰ + ۵۳ جم فری فایر', amount: 583, price: 315000, originalPrice: 360000, badge: 'پیشنهاد FURY_SHOP' },
       { id: 'ff-weekly', title: 'کارت عضویت هفتگی (Weekly Membership)', amount: 'Weekly', price: 125000, originalPrice: 145000 },
       { id: 'ff-monthly', title: 'کارت عضویت ماهانه (Monthly Membership)', amount: 'Monthly', price: 590000, originalPrice: 680000 },
       { id: 'ff-1080', title: '۱۰۸۰ + ۱۰۸ جم فری فایر', amount: 1188, price: 620000, originalPrice: 710000 },

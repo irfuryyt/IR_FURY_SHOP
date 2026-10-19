@@ -13,6 +13,7 @@ import {
   Clock,
   Sparkles,
   ArrowUp,
+  Lock,
 } from 'lucide-react';
 import { toPersianDigits } from '../utils/helpers';
 

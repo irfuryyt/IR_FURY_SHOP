@@ -156,6 +156,10 @@ export interface SiteSettings {
   specialBannerSubtitle: string;
   specialBannerCoupon: string;
   specialBannerDiscount: string;
+  // Banner & Media upload/customization
+  bannerImageUrl?: string;
+  bannerImageActive?: boolean;
+  storeLogoUrl?: string;
 }
 
 export interface User {
@@ -168,6 +172,12 @@ export interface User {
   isAdmin?: boolean;
   walletBalance: number;
   createdAt: string;
+  // Gamer & Custom profile fields
+  gamerTag?: string;
+  gameId?: string;
+  discordId?: string;
+  avatarUrl?: string;
+  bio?: string;
 }
 
 export type PageView =

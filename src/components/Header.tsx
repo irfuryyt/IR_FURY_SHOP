@@ -40,11 +40,16 @@ export const Header: React.FC = () => {
     theme,
     toggleTheme,
     isAdminAuthenticated,
+    setIsAdminAuthenticated,
     adminLogout,
   } = useStore();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  const handleLogoClick = () => {
+    setCurrentView('home');
+  };
 
   const cartTotalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -90,7 +95,7 @@ export const Header: React.FC = () => {
             {/* Logo */}
             <button
               id="brand-logo-btn"
-              onClick={() => setCurrentView('home')}
+              onClick={handleLogoClick}
               className="flex items-center gap-2.5 group text-right cursor-pointer"
             >
               <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-300">
@@ -174,24 +179,22 @@ export const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Admin Panel Quick Access */}
+            {/* Admin Panel Quick Access - The ONE AND ONLY entrance, at top header of the page */}
             <button
               id="header-admin-btn"
-              onClick={() => setCurrentView('admin')}
-              className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              onClick={() => {
+                setIsAdminAuthenticated(false);
+                setCurrentView('admin');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
                 currentView === 'admin'
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
-                  : isAdminAuthenticated
-                  ? 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-400 border border-emerald-800/60'
-                  : 'bg-slate-900 hover:bg-slate-800 text-indigo-300 border border-slate-800'
+                  ? 'bg-indigo-600 text-white shadow-indigo-600/30 ring-2 ring-indigo-400/40'
+                  : 'bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800'
               }`}
-              title={isAdminAuthenticated ? 'پنل مدیریت (وارد شده: IR_FURY_YT)' : `ورود به پنل مدیریت سایت ${siteSettings.storeName}`}
+              title={`پنل مدیریت ${siteSettings.storeName}`}
             >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>پنل مدیریت</span>
-              {isAdminAuthenticated && (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-1" />
-              )}
+              <LayoutDashboard className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden md:inline">پنل مدیریت</span>
             </button>
 
             {/* Shopping Cart Button */}
@@ -217,9 +220,17 @@ export const Header: React.FC = () => {
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                   className="flex items-center gap-2 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-200 px-3 py-2 rounded-xl text-sm transition-colors"
                 >
-                  <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs">
-                    {currentUser.fullName.charAt(0)}
-                  </div>
+                  {currentUser.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt={currentUser.fullName}
+                      className="w-6 h-6 rounded-full object-cover border border-indigo-500/50"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs">
+                      {(currentUser.fullName || currentUser.name || 'U').charAt(0)}
+                    </div>
+                  )}
                   <span className="hidden sm:inline text-xs font-medium max-w-[100px] truncate">
                     {currentUser.fullName}
                   </span>
@@ -236,7 +247,14 @@ export const Header: React.FC = () => {
                       className="absolute left-0 mt-2 w-52 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 divide-y divide-slate-800"
                     >
                       <div className="px-3 py-2">
-                        <p className="text-xs text-slate-400">حساب کاربری</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-slate-400">حساب کاربری</p>
+                          {currentUser.gamerTag && (
+                            <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">
+                              {currentUser.gamerTag}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm font-bold text-white truncate">{currentUser.fullName}</p>
                         <p className="text-xs text-indigo-400 mt-0.5">{toPersianDigits(currentUser.mobile)}</p>
                       </div>
@@ -261,16 +279,6 @@ export const Header: React.FC = () => {
                         >
                           <SearchCode className="w-4 h-4 text-indigo-400" />
                           <span>پیگیری سفارش</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setCurrentView('admin');
-                            setIsUserDropdownOpen(false);
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-indigo-300 hover:bg-indigo-950/40 rounded-lg transition-colors text-right"
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-indigo-400" />
-                          <span>پنل مدیریت فروشگاه</span>
                         </button>
                       </div>
 
@@ -338,6 +346,7 @@ export const Header: React.FC = () => {
             </div>
 
             <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
+
               {/* Mobile Theme Switcher */}
               <div className="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800">
                 <div className="flex items-center gap-2 text-xs text-slate-300">
@@ -351,21 +360,6 @@ export const Header: React.FC = () => {
                   {theme === 'dark' ? 'تغییر به روز' : 'تغییر به شب'}
                 </button>
               </div>
-
-              <button
-                onClick={() => {
-                  setCurrentView('admin');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center justify-center gap-2 p-3 border font-bold rounded-xl text-xs transition-colors ${
-                  isAdminAuthenticated
-                    ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400'
-                    : 'bg-indigo-950/40 border-indigo-800/50 text-indigo-300'
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>{isAdminAuthenticated ? 'ورود به پنل مدیریت (مدیر: IR_FURY_YT)' : 'ورود به پنل مدیریت سایت'}</span>
-              </button>
 
               <div className="flex items-center justify-between text-xs text-slate-400 px-2 py-1">
                 <span>تلفن پشتیبانی {siteSettings.storeName}:</span>
