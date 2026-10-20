@@ -1,6 +1,6 @@
 {
-  "summary": "نسخه بازنگری‌شده طرح مهاجرت به Cloudflare D1:\n۱. شناسایی و حذف دقیق تمامی ارجاعات localStorage در AuthModal، UserProfile، AdminPanel و StoreContext.\n۲. طراحی اسکیما کامل D1 با جداول site_settings، users، products، orders و admin_credentials در فایل d1-schema.sql.\n۳. پیاده‌سازی اسکریپت ورکر کلودفلر (worker/index.ts) با D1 Binding برای دیپلوی در Cloudflare Workers همراه با فایل wrangler.toml.\n۴. پیاده‌سازی سرور فول‌استک محلی (server.ts) با شبیه‌ساز پایگاه‌داده SQLite سازگار با ساختار D1 جهت اجرای آنی در محیط فعلی.\n۵. ایجاد سرویس یکپارچه کلاینت (src/services/api.ts) و اتصال کامل StoreContext به اندپوینت‌های دیتابیس برای همگام‌سازی واقعی در تمام دستگاه‌ها.",
-  "updatedAt": "2026-10-19T08:09:17.870371494Z",
+  "summary": "برنامه اجرایی هماهنگ‌سازی نام پروژه Cloudflare Worker و پکیج به ir-fury-shop با حفظ هویت برند و اتصالات دیتابیس D1",
+  "updatedAt": "2026-10-20T13:50:44.473547219Z",
   "requestFeedback": true,
   "userFacing": true
 }
