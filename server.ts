@@ -23,7 +23,7 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const dbPath = path.join(dataDir, 'furyshop.db');
+const dbPath = path.join(dataDir, 'ir-fury-shop.db');
 const db = new DatabaseSync(dbPath);
 
 // Execute schema creation identical to d1-schema.sql

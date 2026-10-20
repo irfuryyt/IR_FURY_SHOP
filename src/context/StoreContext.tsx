@@ -217,8 +217,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     try {
-      localStorage.removeItem('furyshop_admin_auth');
-      localStorage.removeItem('valagem_admin_auth');
+      localStorage.removeItem('ir_fury_shop_admin_auth');
     } catch {
       // ignore
     }
@@ -226,7 +225,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [adminCredentials, setAdminCredentials] = useState<{ username: string; password?: string }>(() => {
     try {
-      const saved = localStorage.getItem('furyshop_admin_creds');
+      const saved = localStorage.getItem('ir_fury_shop_admin_creds');
       if (saved) {
         return JSON.parse(saved);
       }
@@ -246,7 +245,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newCreds = { username: cleanUser, password: cleanPass };
     setAdminCredentials(newCreds);
     try {
-      localStorage.setItem('furyshop_admin_creds', JSON.stringify(newCreds));
+      localStorage.setItem('ir_fury_shop_admin_creds', JSON.stringify(newCreds));
     } catch {
       // ignore
     }
@@ -290,8 +289,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const adminLogout = () => {
     setIsAdminAuthenticated(false);
     try {
-      localStorage.removeItem('furyshop_admin_auth');
-      localStorage.removeItem('valagem_admin_auth');
+      localStorage.removeItem('ir_fury_shop_admin_auth');
     } catch {
       // ignore
     }

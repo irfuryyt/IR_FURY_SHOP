@@ -22,7 +22,7 @@ export async function fetchSiteSettingsApi(): Promise<SiteSettings | null> {
     const data = await res.json();
     if (data.success && data.settings) {
       try {
-        localStorage.setItem('furyshop_settings_cache', JSON.stringify(data.settings));
+        localStorage.setItem('ir_fury_shop_settings_cache', JSON.stringify(data.settings));
       } catch {
         // ignore
       }
@@ -32,7 +32,7 @@ export async function fetchSiteSettingsApi(): Promise<SiteSettings | null> {
   } catch (err) {
     console.warn('API error fetching site settings, using offline cache fallback:', err);
     try {
-      const cached = localStorage.getItem('furyshop_settings_cache');
+      const cached = localStorage.getItem('ir_fury_shop_settings_cache');
       return cached ? JSON.parse(cached) : null;
     } catch {
       return null;

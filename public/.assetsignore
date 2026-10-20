@@ -1,0 +1,15 @@
+# Cloudflare Workers Assets Ignore
+# Prevents server-side scripts, worker bundles, and internal files from being uploaded as public static assets
+
+_worker.js
+_worker.js.map
+_worker/**
+worker.js
+worker.js.map
+worker/**
+functions/**
+*.sql
+.wrangler
+.env*
+tsconfig*.json
+wrangler.toml

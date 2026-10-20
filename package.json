@@ -8,7 +8,7 @@
     "build": "vite build",
     "start": "tsx server.ts",
     "preview": "vite preview",
-    "deploy:worker": "wrangler deploy",
+    "deploy:worker": "wrangler deploy --name ir-fury-shop",
     "db:init": "wrangler d1 execute ir-fury-shop-db --file=./d1-schema.sql",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
