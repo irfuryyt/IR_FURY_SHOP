@@ -26,6 +26,9 @@ import {
   adminLoginApi,
   updateAdminCredentialsApi,
   updateUserProfileApi,
+  fetchOrdersApi,
+  createOrderApi,
+  fetchProductsApi,
 } from '../services/api';
 
 export interface ToastMessage {
@@ -435,6 +438,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSiteSettings((prev) => ({ ...prev, ...serverSettings }));
       }
     });
+
+    fetchOrdersApi().then((serverOrders) => {
+      if (serverOrders && serverOrders.length > 0) {
+        setOrders(serverOrders);
+      }
+    });
+
+    fetchProductsApi().then((serverProducts) => {
+      if (serverProducts && serverProducts.length > 0) {
+        setProducts(serverProducts);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -599,6 +614,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     setOrders((prev) => [newOrder, ...prev]);
+    createOrderApi(newOrder).catch((err) => console.warn('Order sync to D1 failed:', err));
     setActiveOrderForSuccess(newOrder);
     setPendingOrderId(newOrder.id);
     setLastTrackingCode(trackingCode);

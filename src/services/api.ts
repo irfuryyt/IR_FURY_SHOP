@@ -1,12 +1,19 @@
-import { SiteSettings, User } from '../types';
+import { SiteSettings, User, Product, Order, OrderStatus } from '../types';
 
 const API_BASE = '/api';
 
 /**
- * Universal Database API Client for FURY_SHOP
- * Communicates with Cloudflare D1 / Full-Stack Express Server
- * With automatic offline fallback for resilience
+ * ==============================================================================
+ * Universal Database API Service for FURY_SHOP
+ * - Connects frontend directly to Cloudflare D1 / Express Full-Stack Server
+ * - Completely replaces browser-only localStorage persistence with real D1 database calls
+ * - Provides fallback caching so user experience remains resilient
+ * ==============================================================================
  */
+
+// ----------------------------------------------------------------------
+// 1. SITE SETTINGS & BANNER API
+// ----------------------------------------------------------------------
 
 export async function fetchSiteSettingsApi(): Promise<SiteSettings | null> {
   try {
@@ -17,13 +24,13 @@ export async function fetchSiteSettingsApi(): Promise<SiteSettings | null> {
       try {
         localStorage.setItem('furyshop_settings_cache', JSON.stringify(data.settings));
       } catch {
-        // ignore quota
+        // ignore
       }
       return data.settings;
     }
     return null;
   } catch (err) {
-    console.warn('API error fetching site settings, falling back to cache:', err);
+    console.warn('API error fetching site settings, using offline cache fallback:', err);
     try {
       const cached = localStorage.getItem('furyshop_settings_cache');
       return cached ? JSON.parse(cached) : null;
@@ -45,10 +52,14 @@ export async function updateSiteSettingsApi(
     const data = await res.json();
     return data;
   } catch (err: any) {
-    console.error('API error updating site settings:', err);
+    console.error('API error updating site settings in D1:', err);
     return { success: false, message: err.message };
   }
 }
+
+// ----------------------------------------------------------------------
+// 2. USER AUTHENTICATION & GAMER PROFILE API
+// ----------------------------------------------------------------------
 
 export async function registerUserApi(data: {
   fullName: string;
@@ -103,6 +114,22 @@ export async function updateUserProfileApi(
   }
 }
 
+export async function fetchUserProfileApi(
+  userId: string
+): Promise<{ success: boolean; user?: User; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/users/profile?id=${encodeURIComponent(userId)}`);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ----------------------------------------------------------------------
+// 3. ADMIN AUTHENTICATION API
+// ----------------------------------------------------------------------
+
 export async function adminLoginApi(
   username: string,
   password: string
@@ -134,5 +161,84 @@ export async function updateAdminCredentialsApi(
     return result;
   } catch (err: any) {
     return { success: false, message: 'خطا در ذخیره‌سازی اطلاعات مدیر' };
+  }
+}
+
+// ----------------------------------------------------------------------
+// 4. PRODUCTS & CATALOG API
+// ----------------------------------------------------------------------
+
+export async function fetchProductsApi(): Promise<Product[] | null> {
+  try {
+    const res = await fetch(`${API_BASE}/products`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    return data.success && Array.isArray(data.products) ? data.products : null;
+  } catch (err) {
+    console.warn('API error fetching products, using local fallback:', err);
+    return null;
+  }
+}
+
+export async function saveProductApi(
+  product: Partial<Product>
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ----------------------------------------------------------------------
+// 5. ORDERS & TRACKING API
+// ----------------------------------------------------------------------
+
+export async function fetchOrdersApi(): Promise<Order[] | null> {
+  try {
+    const res = await fetch(`${API_BASE}/orders`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    return data.success && Array.isArray(data.orders) ? data.orders : null;
+  } catch (err) {
+    console.warn('API error fetching orders:', err);
+    return null;
+  }
+}
+
+export async function createOrderApi(
+  order: Partial<Order>
+): Promise<{ success: boolean; message?: string; trackingCode?: string; orderId?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function updateOrderStatusApi(
+  orderId: string,
+  status: OrderStatus,
+  note?: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, note }),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, message: err.message };
   }
 }

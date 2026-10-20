@@ -409,6 +409,64 @@ app.put('/api/admin/credentials', (req, res) => {
   }
 });
 
+// GET /api/products - Get all products
+app.get('/api/products', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM products ORDER BY created_at DESC').all();
+    const products = rows.map((r: any) => ({
+      ...r,
+      packages: r.packages_json ? JSON.parse(r.packages_json) : [],
+      inStock: Boolean(r.in_stock),
+      featured: Boolean(r.featured),
+    }));
+    res.json({ success: true, products });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/orders - Get orders
+app.get('/api/orders', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+    const orders = rows.map((r: any) => ({
+      ...r,
+      items: r.items_json ? JSON.parse(r.items_json) : [],
+      statusHistory: r.status_history_json ? JSON.parse(r.status_history_json) : [],
+    }));
+    res.json({ success: true, orders });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/orders - Create new customer order
+app.post('/api/orders', (req, res) => {
+  try {
+    const o = req.body;
+    db.prepare(`
+      INSERT INTO orders (
+        id, tracking_code, user_id, customer_name, customer_mobile,
+        items_json, total_amount, subtotal, payment_method, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      o.id || ('ord_' + Date.now()),
+      o.trackingCode || ('FURY-' + Math.floor(100000 + Math.random() * 900000)),
+      o.userId || null,
+      o.customerName || 'کاربر گرامی',
+      o.customerMobile || '',
+      JSON.stringify(o.items || []),
+      o.totalAmount || 0,
+      o.subtotal || o.totalAmount || 0,
+      o.paymentMethod || 'کارت به کارت',
+      o.status || 'pending'
+    );
+    res.json({ success: true, message: 'سفارش در پایگاه‌داده ثبت شد' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ----------------------------------------------------------------------
 // 3. Vite Middleware Integration (Dev & Prod)
 // ----------------------------------------------------------------------

@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build",
+    "build": "vite build && esbuild worker/index.ts --bundle --format=esm --outfile=dist/_worker.js --target=es2022",
+    "build:client": "vite build",
+    "build:worker": "esbuild worker/index.ts --bundle --format=esm --outfile=dist/_worker.js --target=es2022",
     "start": "tsx server.ts",
     "preview": "vite preview",
     "deploy:worker": "wrangler deploy",
