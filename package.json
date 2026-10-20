@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build",
+    "build": "vite build && node -e \"import('fs').then(fs => fs.copyFileSync('.assetsignore', 'dist/.assetsignore'))\"",
     "start": "tsx server.ts",
     "preview": "vite preview",
     "deploy:worker": "wrangler deploy --name ir-fury-shop",

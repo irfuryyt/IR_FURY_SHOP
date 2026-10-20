@@ -1,6 +1,6 @@
 {
-  "summary": "برنامه اجرایی هماهنگ‌سازی نام پروژه Cloudflare Worker و پکیج به ir-fury-shop با حفظ هویت برند و اتصالات دیتابیس D1",
-  "updatedAt": "2026-10-20T13:50:44.473547219Z",
-  "requestFeedback": true,
-  "userFacing": true
+  "summary":  "برنامه اجرایی رفع خطای Uploading a Pages _worker.js file as an asset در پایپ‌لاین بیلد کلودفلر و آماده‌سازی نهایی انتشار سایت",
+  "updatedAt":  "2026-10-20T14:45:48.070095549Z",
+  "requestFeedback":  true,
+  "userFacing":  true
 }
